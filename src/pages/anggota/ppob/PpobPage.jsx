@@ -11,8 +11,8 @@ const menuLayanan = [
 ]
 
 const menuPembayaran = [
-  { to: '/anggota/payment/simpanan/simpanan_wajib', icon: 'fa-piggy-bank',         label: 'Simpanan Wajib',  cls: 'from-emerald-500 to-teal-600'   },
-  { to: '/anggota/payment/simpanan/simpanan_sukarela', icon: 'fa-hand-holding-heart', label: 'Sim. Sukarela',  cls: 'from-cyan-500 to-blue-600'    },
+  { to: '/anggota/payment/simpanan/wajib', icon: 'fa-piggy-bank',         label: 'Simpanan Wajib',  cls: 'from-emerald-500 to-teal-600'   },
+  { to: '/anggota/payment/simpanan/sukarela', icon: 'fa-hand-holding-heart', label: 'Sim. Sukarela',  cls: 'from-cyan-500 to-blue-600'    },
   { to: '/anggota/cicilan',                         icon: 'fa-file-invoice-dollar', label: 'Bayar Cicilan',  cls: 'from-amber-500 to-orange-600'  },
   { to: '/anggota/payment/riwayat',                 icon: 'fa-receipt',            label: 'Riwayat Bayar',  cls: 'from-slate-500 to-slate-600'    },
 ]

@@ -1,11 +1,12 @@
 import { Outlet, NavLink } from 'react-router-dom'
-import { CalendarCheck, HandCoins, Home, UserRound, Wallet } from 'lucide-react'
+import { CalendarCheck, HandCoins, Home, Smartphone, UserRound, Wallet } from 'lucide-react'
 
 const navItems = [
   { to: '/anggota/dashboard', icon: Home, label: 'Beranda' },
   { to: '/anggota/simpanan', icon: Wallet, label: 'Simpan' },
   { to: '/anggota/pinjaman', icon: HandCoins, label: 'Pinjam' },
   { to: '/anggota/cicilan', icon: CalendarCheck, label: 'Cicilan' },
+  { to: '/anggota/ppob', icon: Smartphone, label: 'PPOB' },
   { to: '/anggota/profil', icon: UserRound, label: 'Profil' },
 ]
 

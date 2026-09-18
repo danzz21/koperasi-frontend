@@ -19,6 +19,7 @@ import PpobListrikPage  from '@/pages/anggota/ppob/ListrikPage'
 import PpobEwalletPage  from '@/pages/anggota/ppob/EwalletPage'
 import PpobStatusPage   from '@/pages/anggota/ppob/StatusPage'
 import PpobRiwayatPage  from '@/pages/anggota/ppob/RiwayatPage'
+import PpobConfirmationPage from '@/pages/anggota/ppob/ConfirmationPage'
 import PaymentCicilanPage  from '@/pages/anggota/payment/CicilanPage'
 import PaymentSimpananPage from '@/pages/anggota/payment/SimpananPage'
 import PaymentStatusPage   from '@/pages/anggota/payment/StatusPage'
@@ -79,6 +80,7 @@ export default function App() {
         <Route path="ppob/data"          element={<PpobDataPage />} />
         <Route path="ppob/listrik"       element={<PpobListrikPage />} />
         <Route path="ppob/ewallet"       element={<PpobEwalletPage />} />
+        <Route path="ppob/konfirmasi"    element={<PpobConfirmationPage />} />
         <Route path="ppob/status/:orderId" element={<PpobStatusPage />} />
         <Route path="ppob/riwayat"       element={<PpobRiwayatPage />} />
 
