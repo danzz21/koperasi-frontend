@@ -1,0 +1,203 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+:root {
+  --primary: #10b981;
+  --primary-dark: #059669;
+  --primary-light: #34d399;
+  --secondary: #06b6d4;
+  --accent: #f59e0b;
+  --danger: #ef4444;
+  --dark: #0f172a;
+  --gray: #64748b;
+  --gradient-primary: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+  --gradient-dark: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  --shadow: 0 10px 25px -5px rgba(0,0,0,0.08);
+  --border-radius: 20px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #f0fdf9;
+  color: var(--dark);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Anggota shell follows the mobile dashboard in Koperasi 3 fixing. */
+.member-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  color: #fff;
+  background: var(--gradient-primary);
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, .25);
+}
+.member-header-content {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.member-avatar {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 2px solid rgba(255, 255, 255, .8);
+  border-radius: 50%;
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .15);
+}
+.member-profile-copy, .member-header-title { flex: 1; min-width: 0; }
+.member-profile-copy h1, .member-header-title h1 {
+  margin: 0;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.member-profile-copy p {
+  margin: 3px 0 0;
+  color: rgba(255, 255, 255, .9);
+  font-size: 11px;
+}
+.member-header-title h1 { font-size: 18px; }
+.member-header-action {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(255, 255, 255, .14);
+  cursor: pointer;
+}
+.member-header-action:hover { background: rgba(255, 255, 255, .24); }
+.member-profile-header {
+  padding: 18px 16px 28px;
+  color: #fff;
+  background: var(--gradient-primary);
+  border-radius: 0 0 20px 20px;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, .25);
+}
+.member-profile-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+.member-profile-top h1 { margin: 0; font-size: 18px; font-weight: 800; }
+.member-profile-avatar {
+  width: 80px;
+  height: 80px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 10px;
+  border: 4px solid rgba(255, 255, 255, .3);
+  border-radius: 50%;
+  color: #fff;
+  font-size: 30px;
+  font-weight: 800;
+}
+.member-profile-header h2 { margin: 0; color: #fff; font-size: 24px; font-weight: 800; text-align: center; }
+.member-profile-header p { margin: 4px 0 0; font-size: 13px; opacity: .9; text-align: center; }
+
+@layer components {
+  /* ── Header Mobile Anggota ── */
+  .header-mobile {
+    @apply sticky top-0 z-50 text-white shadow-lg;
+    background: var(--gradient-primary);
+    border-radius: 0 0 20px 20px;
+  }
+
+  /* ── Card ── */
+  .card {
+    @apply bg-white rounded-2xl shadow-sm border border-gray-100;
+  }
+  .card-body { @apply p-5; }
+  .card-title { @apply text-sm font-bold text-gray-700 flex items-center gap-2 mb-4; }
+
+  /* ── Stat Card ── */
+  .stat-card {
+    @apply text-white p-4 rounded-2xl shadow-lg relative overflow-hidden;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .stat-card:hover { transform: translateY(-3px); }
+
+  /* ── Badge Status ── */
+  .badge { @apply inline-block text-xs font-bold px-2 py-0.5 rounded-full; }
+  .badge-success { @apply bg-emerald-100 text-emerald-700; }
+  .badge-pending { @apply bg-amber-100 text-amber-700; }
+  .badge-failed  { @apply bg-rose-100 text-rose-700; }
+  .badge-expired { @apply bg-gray-100 text-gray-500; }
+  .badge-paid    { @apply bg-emerald-100 text-emerald-700; }
+
+  /* ── Bottom Nav ── */
+  .bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200
+           flex justify-around py-2 z-50;
+    box-shadow: 0 -4px 20px rgba(0,0,0,.08);
+  }
+  .nav-item {
+    @apply flex flex-col items-center gap-1 text-gray-500 text-xs font-semibold flex-1 py-1;
+  }
+  .nav-item.active { @apply text-emerald-600; }
+
+  /* ── Button ── */
+  .btn-primary {
+    @apply w-full py-3 rounded-2xl text-white font-bold text-sm transition-all;
+    background: var(--gradient-primary);
+  }
+  .btn-primary:disabled { @apply opacity-50 cursor-not-allowed; }
+  .btn-outline {
+    @apply w-full py-3 rounded-2xl font-bold text-sm border-2 border-emerald-500 text-emerald-600 bg-white;
+  }
+
+  /* ── Input ── */
+  .input-field {
+    @apply w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm
+           focus:outline-none focus:border-emerald-400 transition-colors;
+  }
+
+  /* ── Produk Card PPOB ── */
+  .produk-card {
+    @apply bg-white rounded-2xl p-3 border-2 border-transparent cursor-pointer
+           shadow-sm transition-all duration-150;
+  }
+  .produk-card.selected { @apply border-emerald-500 bg-emerald-50; }
+  .produk-card:active   { transform: scale(.97); }
+
+  /* ── Metode Card ── */
+  .metode-card {
+    @apply border-2 border-gray-200 rounded-2xl p-3 cursor-pointer transition-all;
+  }
+  .metode-card.selected { @apply border-emerald-500 bg-emerald-50; }
+}
+
+/* ── Animations ── */
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(16px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+.fade-up { animation: fadeUp .3s ease forwards; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner {
+  width:40px; height:40px; border:4px solid #e2e8f0;
+  border-top-color: var(--primary); border-radius:50%;
+  animation: spin .8s linear infinite;
+}
