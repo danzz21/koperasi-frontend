@@ -1,12 +1,47 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '@/store/authStore'
 import api from '@/lib/api'
-import { User, LogOut, Edit2, Phone, Mail, MapPin, Landmark } from 'lucide-react'
+import { usePasskey } from '@/hooks/usePasskey'
+import PasskeySetupModal from '@/pages/auth/PasskeySetupModal'
+import {
+  Edit2,
+  Fingerprint,
+  Landmark,
+  LogOut,
+  Mail,
+  MapPin,
+  Phone,
+  ShieldCheck,
+  Trash2,
+  User,
+} from 'lucide-react'
 
 export default function ProfilPage() {
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
+  const { listDevices, removeDevice, supported: passkeySupported } = usePasskey()
+  const [showPasskeyModal, setShowPasskeyModal] = useState(false)
+
+  const { data: passkeys = [], refetch: refetchPasskeys } = useQuery({
+    queryKey: ['anggota-passkeys'],
+    queryFn: listDevices,
+    enabled: passkeySupported,
+  })
+
+  const handleRemovePasskey = async (id) => {
+    if (!confirm('Hapus perangkat ini? Kamu tidak bisa lagi login biometrik dari perangkat tersebut.')) {
+      return
+    }
+
+    try {
+      await removeDevice(id)
+      refetchPasskeys()
+    } catch {
+      alert('Gagal menghapus perangkat. Coba lagi.')
+    }
+  }
 
   const { data: profil = {}, isLoading } = useQuery({
     queryKey: ['anggota-profil'],
@@ -64,6 +99,71 @@ export default function ProfilPage() {
           <Edit2 className="w-5 h-5" />
           Edit Profil
         </button>
+      </div>
+
+      {/* Keamanan — passkey (sidik jari / Face ID) */}
+      <div className="px-4 py-2">
+        <div className="bg-white rounded-2xl p-4 shadow-sm">
+          <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-emerald-600" />
+            Keamanan
+          </h3>
+
+          <p className="text-sm text-gray-600">
+            Masuk tanpa mengetik password memakai sidik jari / Face ID / PIN perangkat.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => setShowPasskeyModal(true)}
+            disabled={!passkeySupported}
+            className="mt-3 w-full bg-white border border-emerald-200 text-emerald-700 py-2.5 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Fingerprint className="w-5 h-5" />
+            Aktifkan di perangkat ini
+          </button>
+
+          {!passkeySupported && (
+            <p className="mt-2 text-xs text-amber-600">
+              Browser/perangkat ini belum mendukung passkey.
+            </p>
+          )}
+
+          {passkeys.length > 0 && (
+            <ul className="mt-4 space-y-2">
+              {passkeys.map((device) => (
+                <li
+                  key={device.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-gray-800">
+                      {device.device_name || 'Perangkat'}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Terakhir dipakai:{' '}
+                      {device.last_used_at
+                        ? new Date(device.last_used_at).toLocaleString('id-ID')
+                        : '-'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePasskey(device.id)}
+                    title="Hapus perangkat"
+                    className="shrink-0 rounded-lg p-2 text-rose-500 transition hover:bg-rose-50"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {passkeySupported && passkeys.length === 0 && (
+            <p className="mt-3 text-xs text-gray-400">Belum ada perangkat terdaftar.</p>
+          )}
+        </div>
       </div>
 
       {/* Data Pribadi */}
@@ -160,6 +260,14 @@ export default function ProfilPage() {
         </div>
 
       </div>
+
+      {showPasskeyModal && (
+        <PasskeySetupModal
+          userName={profil.nama_lengkap || user?.nama}
+          onClose={() => setShowPasskeyModal(false)}
+          onRegistered={refetchPasskeys}
+        />
+      )}
 
     </div>
   )

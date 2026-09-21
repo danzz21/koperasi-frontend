@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import useAuthStore from '@/store/authStore'
+import GoogleLoginButton from '@/components/GoogleLoginButton'
+import PasskeyButton from '@/components/PasskeyButton'
+import { redirectAfterLogin } from '@/lib/postLogin'
 
 export default function LoginPage() {
   const { login, loading, error, clearError } = useAuthStore()
@@ -13,15 +16,13 @@ export default function LoginPage() {
     clearError()
     try {
       const user = await login(form.username, form.password)
-      if (user.role === 'admin') {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        window.location.replace(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/admin/login`)
-        return
-      }
-
-      navigate('/anggota/dashboard', { replace: true })
+      redirectAfterLogin(user, navigate)
     } catch (_) {}
+  }
+
+  /** Dipakai tombol Google & passkey — sudah menyimpan sesi di store. */
+  const handleAlternateLogin = (user) => {
+    redirectAfterLogin(user, navigate)
   }
 
   return (
@@ -96,6 +97,23 @@ export default function LoginPage() {
               ) : 'Masuk'}
             </button>
           </form>
+
+          {/* ── Alternatif login: Google & passkey ── */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-white px-3 text-xs font-bold uppercase tracking-wider text-gray-400">
+                atau
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <GoogleLoginButton onSuccess={handleAlternateLogin} />
+            <PasskeyButton username={form.username.trim()} onSuccess={handleAlternateLogin} />
+          </div>
 
           <p className="text-center text-sm text-gray-500 mt-4">
             Belum punya akun?{' '}

@@ -34,6 +34,29 @@ const useAuthStore = create((set, get) => ({
   // Clear error
   clearError: () => set({ error: null }),
 
+  // Tandai proses login berjalan (dipakai hook Google/passkey)
+  setLoading: (loading) => set({ loading }),
+
+  // Set pesan error dari jalur login lain
+  setError: (message) => set({ error: message, loading: false }),
+
+  /**
+   * Simpan hasil login dari jalur selain password (Google / passkey).
+   * Menerima { token, user } sesuai balikan AuthController.
+   */
+  applyAuth: ({ token, user } = {}) => {
+    if (!user) {
+      set({ loading: false, error: 'Respons login tidak valid.' })
+      return null
+    }
+
+    if (token) localStorage.setItem('koperasi_token', token)
+    localStorage.setItem('koperasi_user', JSON.stringify(user))
+    set({ token: token ?? get().token, user, loading: false, error: null })
+
+    return user
+  },
+
   // Check apakah user adalah admin
   isAdmin:   () => get().user?.role === 'admin',
   isAnggota: () => get().user?.role === 'anggota',

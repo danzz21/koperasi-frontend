@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import useAuthStore from '@/store/authStore'
+import InstallBanner from '@/components/InstallBanner'
 
 // Auth
 import LoginPage    from '@/pages/auth/LoginPage'
@@ -57,50 +58,55 @@ function RedirectIfAuth() {
 
 export default function App() {
   return (
-    <Routes>
-      {/* ── Public ── */}
-      <Route path="/" element={<RedirectIfAuth />} />
-      <Route path="/login"   element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+    <>
+      {/* Banner install PWA — tampil di semua halaman (login maupun anggota) */}
+      <InstallBanner />
 
-      {/* ── Anggota ── */}
-      <Route path="/anggota" element={
-        <RequireAuth role="anggota"><AnggotaLayout /></RequireAuth>
-      }>
-        <Route index element={<Navigate to="dashboard" />} />
-        <Route path="dashboard"  element={<DashboardPage />} />
-        <Route path="simpanan"   element={<SimpananPage />} />
-        <Route path="pinjaman"   element={<PinjamanPage />} />
-        <Route path="cicilan"    element={<CicilanPage />} />
-        <Route path="profil"     element={<ProfilPage />} />
+      <Routes>
+        {/* ── Public ── */}
+        <Route path="/" element={<RedirectIfAuth />} />
+        <Route path="/login"   element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
-        {/* PPOB */}
-        <Route path="ppob"               element={<PpobPage />} />
-        <Route path="ppob/pulsa"         element={<PpobPulsaPage />} />
-        <Route path="ppob/data"          element={<PpobDataPage />} />
-        <Route path="ppob/listrik"       element={<PpobListrikPage />} />
-        <Route path="ppob/ewallet"       element={<PpobEwalletPage />} />
-        <Route path="ppob/konfirmasi"    element={<PpobConfirmationPage />} />
-        <Route path="ppob/status/:orderId" element={<PpobStatusPage />} />
-        <Route path="ppob/riwayat"       element={<PpobRiwayatPage />} />
+        {/* ── Anggota ── */}
+        <Route path="/anggota" element={
+          <RequireAuth role="anggota"><AnggotaLayout /></RequireAuth>
+        }>
+          <Route index element={<Navigate to="dashboard" />} />
+          <Route path="dashboard"  element={<DashboardPage />} />
+          <Route path="simpanan"   element={<SimpananPage />} />
+          <Route path="pinjaman"   element={<PinjamanPage />} />
+          <Route path="cicilan"    element={<CicilanPage />} />
+          <Route path="profil"     element={<ProfilPage />} />
 
-        {/* Payment */}
-        <Route path="payment/cicilan/:jenis/:id" element={<PaymentCicilanPage />} />
-        <Route path="payment/simpanan/:jenis"    element={<PaymentSimpananPage />} />
-        <Route path="payment/status/:orderId"    element={<PaymentStatusPage />} />
-        <Route path="payment/riwayat"            element={<PaymentRiwayatPage />} />
-      </Route>
+          {/* PPOB */}
+          <Route path="ppob"               element={<PpobPage />} />
+          <Route path="ppob/pulsa"         element={<PpobPulsaPage />} />
+          <Route path="ppob/data"          element={<PpobDataPage />} />
+          <Route path="ppob/listrik"       element={<PpobListrikPage />} />
+          <Route path="ppob/ewallet"       element={<PpobEwalletPage />} />
+          <Route path="ppob/konfirmasi"    element={<PpobConfirmationPage />} />
+          <Route path="ppob/status/:orderId" element={<PpobStatusPage />} />
+          <Route path="ppob/riwayat"       element={<PpobRiwayatPage />} />
 
-      {/* ── 404 ── */}
-      <Route path="*" element={
-        <div className="min-h-screen flex items-center justify-center text-gray-500">
-          <div className="text-center">
-            <div className="text-6xl font-black text-gray-200 mb-2">404</div>
-            <p className="font-semibold mb-4">Halaman tidak ditemukan</p>
-            <a href="/" className="text-emerald-600 font-bold hover:underline">← Kembali ke Beranda</a>
+          {/* Payment */}
+          <Route path="payment/cicilan/:jenis/:id" element={<PaymentCicilanPage />} />
+          <Route path="payment/simpanan/:jenis"    element={<PaymentSimpananPage />} />
+          <Route path="payment/status/:orderId"    element={<PaymentStatusPage />} />
+          <Route path="payment/riwayat"            element={<PaymentRiwayatPage />} />
+        </Route>
+
+        {/* ── 404 ── */}
+        <Route path="*" element={
+          <div className="min-h-screen flex items-center justify-center text-gray-500">
+            <div className="text-center">
+              <div className="text-6xl font-black text-gray-200 mb-2">404</div>
+              <p className="font-semibold mb-4">Halaman tidak ditemukan</p>
+              <a href="/" className="text-emerald-600 font-bold hover:underline">← Kembali ke Beranda</a>
+            </div>
           </div>
-        </div>
-      } />
-    </Routes>
+        } />
+      </Routes>
+    </>
   )
 }
