@@ -20,15 +20,26 @@ api.interceptors.request.use(config => {
   return config
 })
 
-// Response interceptor: handle 401 global
+// Response interceptor: handle 401 & 403 (profil belum lengkap) secara global
 api.interceptors.response.use(
   res => res,
   err => {
-    if (err.response?.status === 401) {
+    const status = err.response?.status
+    const code = err.response?.data?.code
+
+    if (status === 401) {
       localStorage.removeItem('koperasi_token')
       localStorage.removeItem('koperasi_user')
       window.location.href = '/login'
     }
+
+    // Anggota yang belum melengkapi data (mis. login Google) diarahkan ke onboarding
+    if (status === 403 && code === 'PROFILE_INCOMPLETE') {
+      if (!window.location.pathname.startsWith('/anggota/onboarding')) {
+        window.location.href = '/anggota/onboarding'
+      }
+    }
+
     return Promise.reject(err)
   }
 )

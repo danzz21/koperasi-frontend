@@ -2,7 +2,10 @@ import useAuthStore from '@/store/authStore'
 
 /**
  * Arahkan user setelah login berhasil.
- * Admin/superadmin memakai panel Filament (bukan SPA anggota).
+ *
+ * - Admin/superadmin → panel Filament (bukan SPA anggota)
+ * - Anggota yang belum melengkapi data (login Google) → onboarding
+ * - Anggota lain → dasbor
  */
 export function redirectAfterLogin(user, navigate) {
   if (user?.role === 'admin' || user?.role === 'superadmin') {
@@ -13,5 +16,7 @@ export function redirectAfterLogin(user, navigate) {
     return
   }
 
-  navigate?.('/anggota/dashboard', { replace: true })
+  const target = user?.needs_onboarding ? '/anggota/onboarding' : '/anggota/dashboard'
+
+  navigate?.(target, { replace: true })
 }

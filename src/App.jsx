@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import useAuthStore from '@/store/authStore'
 import InstallBanner from '@/components/InstallBanner'
 
@@ -8,6 +9,8 @@ import RegisterPage from '@/pages/auth/RegisterPage'
 
 // Anggota
 import AnggotaLayout    from '@/layouts/AnggotaLayout'
+import OnboardingPage   from '@/pages/anggota/OnboardingPage'
+import EditProfilPage   from '@/pages/anggota/EditProfilPage'
 import DashboardPage    from '@/pages/anggota/DashboardPage'
 import SimpananPage     from '@/pages/anggota/SimpananPage'
 import PinjamanPage     from '@/pages/anggota/PinjamanPage'
@@ -26,19 +29,42 @@ import PaymentSimpananPage from '@/pages/anggota/payment/SimpananPage'
 import PaymentStatusPage   from '@/pages/anggota/payment/StatusPage'
 import PaymentRiwayatPage  from '@/pages/anggota/payment/RiwayatPage'
 
+const ONBOARDING_PATH = '/anggota/onboarding'
+
 // Guard components
-function RequireAuth({ children, role }) {
+function RequireAuth({ children, role, allowIncomplete = false }) {
   const { user } = useAuthStore()
+  const location = useLocation()
+
   if (!user) return <Navigate to="/login" replace />
+
   if (role && user.role !== role) {
-    if (user.role === 'admin') {
+    if (user.role === 'admin' || user.role === 'superadmin') {
       window.location.replace(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/admin/login`)
       return null
     }
 
     return <Navigate to="/login" replace />
   }
+
+  // Anggota wajib melengkapi data dulu sebelum memakai fitur apa pun
+  if (!allowIncomplete && user.role === 'anggota' && user.needs_onboarding && location.pathname !== ONBOARDING_PATH) {
+    return <Navigate to={ONBOARDING_PATH} replace />
+  }
+
   return children
+}
+
+/** Sinkronkan data user dari server saat aplikasi dibuka (status onboarding bisa berubah dari admin). */
+function useSyncUser() {
+  const token = useAuthStore((state) => state.token)
+  const refreshUser = useAuthStore((state) => state.refreshUser)
+
+  useEffect(() => {
+    if (token) {
+      refreshUser()
+    }
+  }, [token, refreshUser])
 }
 
 function RedirectIfAuth() {
@@ -50,13 +76,15 @@ function RedirectIfAuth() {
   }
 
   if (user?.role === 'anggota') {
-    return <Navigate to="/anggota/dashboard" replace />
+    return <Navigate to={user.needs_onboarding ? ONBOARDING_PATH : '/anggota/dashboard'} replace />
   }
 
   return <Navigate to="/login" replace />
 }
 
 export default function App() {
+  useSyncUser()
+
   return (
     <>
       {/* Banner install PWA — tampil di semua halaman (login maupun anggota) */}
@@ -68,6 +96,13 @@ export default function App() {
         <Route path="/login"   element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
+        {/* ── Onboarding anggota (tanpa bottom nav, sebelum profil lengkap) ── */}
+        <Route path={ONBOARDING_PATH} element={
+          <RequireAuth role="anggota" allowIncomplete>
+            <OnboardingPage />
+          </RequireAuth>
+        } />
+
         {/* ── Anggota ── */}
         <Route path="/anggota" element={
           <RequireAuth role="anggota"><AnggotaLayout /></RequireAuth>
@@ -78,6 +113,7 @@ export default function App() {
           <Route path="pinjaman"   element={<PinjamanPage />} />
           <Route path="cicilan"    element={<CicilanPage />} />
           <Route path="profil"     element={<ProfilPage />} />
+          <Route path="profil/edit" element={<EditProfilPage />} />
 
           {/* PPOB */}
           <Route path="ppob"               element={<PpobPage />} />

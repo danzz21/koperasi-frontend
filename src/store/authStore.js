@@ -41,6 +41,30 @@ const useAuthStore = create((set, get) => ({
   setError: (message) => set({ error: message, loading: false }),
 
   /**
+   * Perbarui data user di store + localStorage.
+   * Dipakai setelah onboarding, edit profil, atau sinkronisasi /auth/me.
+   */
+  setUser: (user) => {
+    if (!user) return null
+
+    localStorage.setItem('koperasi_user', JSON.stringify(user))
+    set({ user })
+
+    return user
+  },
+
+  /** Ambil ulang data user dari server agar status onboarding selalu akurat. */
+  refreshUser: async () => {
+    try {
+      const { data } = await api.get('/auth/me')
+
+      return get().setUser(data?.user ?? null)
+    } catch (_) {
+      return null
+    }
+  },
+
+  /**
    * Simpan hasil login dari jalur selain password (Google / passkey).
    * Menerima { token, user } sesuai balikan AuthController.
    */
