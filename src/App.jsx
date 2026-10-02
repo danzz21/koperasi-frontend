@@ -24,10 +24,12 @@ import PpobEwalletPage  from '@/pages/anggota/ppob/EwalletPage'
 import PpobStatusPage   from '@/pages/anggota/ppob/StatusPage'
 import PpobRiwayatPage  from '@/pages/anggota/ppob/RiwayatPage'
 import PpobConfirmationPage from '@/pages/anggota/ppob/ConfirmationPage'
+import EwalletPage      from '@/pages/anggota/EwalletPage'
 import PaymentCicilanPage  from '@/pages/anggota/payment/CicilanPage'
 import PaymentSimpananPage from '@/pages/anggota/payment/SimpananPage'
 import PaymentStatusPage   from '@/pages/anggota/payment/StatusPage'
 import PaymentRiwayatPage  from '@/pages/anggota/payment/RiwayatPage'
+import RiwayatEwalletPage  from '@/pages/anggota/ppob/RiwayatEwalletPage'
 
 const ONBOARDING_PATH = '/anggota/onboarding'
 
@@ -115,6 +117,9 @@ export default function App() {
           <Route path="profil"     element={<ProfilPage />} />
           <Route path="profil/edit" element={<EditProfilPage />} />
 
+          {/* E-Wallet Koperasi */}
+          <Route path="ewallet" element={<EwalletPage />} />
+
           {/* PPOB */}
           <Route path="ppob"               element={<PpobPage />} />
           <Route path="ppob/pulsa"         element={<PpobPulsaPage />} />
@@ -124,6 +129,7 @@ export default function App() {
           <Route path="ppob/konfirmasi"    element={<PpobConfirmationPage />} />
           <Route path="ppob/status/:orderId" element={<PpobStatusPage />} />
           <Route path="ppob/riwayat"       element={<PpobRiwayatPage />} />
+          <Route path="ppob/riwayat-ewallet" element={<RiwayatEwalletPage />} />
 
           {/* Payment */}
           <Route path="payment/cicilan/:jenis/:id" element={<PaymentCicilanPage />} />

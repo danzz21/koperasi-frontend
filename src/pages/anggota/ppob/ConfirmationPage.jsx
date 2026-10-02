@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react'
-import { ArrowLeft, Check, CreditCard, LoaderCircle, ShoppingCart } from 'lucide-react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { ArrowLeft, Check, CreditCard, LoaderCircle, ShoppingCart, Wallet } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api'
 
 const paymentMethods = [
+  { id: 'ewallet',  label: 'Saldo E-Wallet Koperasi', group: 'Saldo Koperasi', fee: 0, color: 'bg-violet-600' },
   { id: 'bca_va', label: 'BCA Virtual Account', group: 'Virtual Account', fee: 4000, color: 'bg-blue-600' },
   { id: 'bni_va', label: 'BNI Virtual Account', group: 'Virtual Account', fee: 4000, color: 'bg-orange-500' },
   { id: 'bri_va', label: 'BRI Virtual Account', group: 'Virtual Account', fee: 4000, color: 'bg-sky-600' },
@@ -12,15 +14,37 @@ const paymentMethods = [
   { id: 'dana', label: 'DANA', group: 'E-Wallet & QRIS', fee: 1000, color: 'bg-blue-500' },
 ]
 
+const GROUPS = ['Saldo Koperasi', 'Virtual Account', 'E-Wallet & QRIS']
+
+const formatRupiah = (n) => `Rp ${new Intl.NumberFormat('id-ID').format(Number(n) || 0)}`
+
 export default function ConfirmationPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { state } = useLocation()
   const order = state?.order
-  const [method, setMethod] = useState('qris')
+  const [method, setMethod] = useState('ewallet')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const selectedMethod = paymentMethods.find(item => item.id === method)
   const total = useMemo(() => Number(order?.harga || 0) + Number(selectedMethod?.fee || 0), [order, selectedMethod])
+
+  // Saldo E-Wallet untuk menentukan metode default & kecukupan saldo
+  const { data: wallet = {} } = useQuery({
+    queryKey: ['anggota-ewallet'],
+    queryFn: () => api.get('/anggota/ewallet').then(res => res.data?.data ?? {}),
+    staleTime: 30000,
+  })
+
+  const saldo = Number(wallet.saldo || 0)
+  const saldoCukup = saldo >= total
+
+  // Default: pakai saldo e-wallet bila cukup, selain itu QRIS
+  useEffect(() => {
+    if (!order) return
+    const hargaProduk = Number(order.harga || 0)
+    setMethod(saldo >= hargaProduk ? 'ewallet' : 'qris')
+  }, [order, saldo])
 
   if (!order) {
     return (
@@ -35,6 +59,14 @@ export default function ConfirmationPage() {
     event.preventDefault()
     setLoading(true)
     setError('')
+
+    if (method === 'ewallet' && !saldoCukup) {
+      setLoading(false)
+      setError(
+        `Saldo E-Wallet kamu ${formatRupiah(saldo)}, belum cukup untuk total ${formatRupiah(total)}. Topup dulu saldomu.`,
+      )
+      return
+    }
     try {
       const response = await api.post('/anggota/ppob/order', {
         ...order,
@@ -42,6 +74,12 @@ export default function ConfirmationPage() {
       }, { timeout: 20000 })
       const orderId = response.data?.data?.order_id || response.data?.order_id
       if (!orderId) throw new Error('Server tidak mengembalikan order ID.')
+
+      // Saldo e-wallet & riwayat PPOB berubah setelah order dibuat
+      queryClient.invalidateQueries({ queryKey: ['anggota-ewallet'] })
+      queryClient.invalidateQueries({ queryKey: ['ppob-index'] })
+      queryClient.invalidateQueries({ queryKey: ['ppob-riwayat'] })
+
       navigate(`/anggota/ppob/status/${orderId}`)
     } catch (err) {
       const validation = err.response?.data?.errors
@@ -71,11 +109,19 @@ export default function ConfirmationPage() {
         </section>
         <section className="rounded-2xl bg-white p-4 shadow-sm">
           <h2 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-500"><CreditCard size={15} /> Pilih Metode Pembayaran</h2>
-          {['Virtual Account', 'E-Wallet & QRIS'].map(group => <div key={group} className="mb-3 last:mb-0"><p className="mb-2 text-[11px] font-bold uppercase text-gray-400">{group}</p><div className="grid grid-cols-2 gap-2">{paymentMethods.filter(item => item.group === group).map(item => <button type="button" key={item.id} onClick={() => setMethod(item.id)} className={`relative rounded-xl border-2 p-3 text-left ${method === item.id ? 'border-emerald-500 bg-emerald-50' : 'border-gray-100'}`}><span className={`mb-2 flex h-8 w-8 items-center justify-center rounded-lg text-white ${item.color}`}><CreditCard size={15} /></span><span className="block text-xs font-bold">{item.label}</span><span className="mt-1 block text-[10px] text-gray-500">{item.fee ? `+Rp ${item.fee.toLocaleString('id-ID')}` : 'Gratis'}</span>{method === item.id && <Check size={15} className="absolute right-2 top-2 text-emerald-600" />}</button>)}</div></div>)}
+          {GROUPS.map(group => <div key={group} className="mb-3 last:mb-0"><div className="mb-2 flex items-center justify-between"><p className="text-[11px] font-bold uppercase text-gray-400">{group}</p>{group === 'Saldo Koperasi' && <Link to="/anggota/ewallet" className="text-[11px] font-bold text-violet-600">+ Top Up</Link>}</div><div className="grid grid-cols-2 gap-2">{paymentMethods.filter(item => item.group === group).map(item => <button type="button" key={item.id} onClick={() => setMethod(item.id)} className={`relative rounded-xl border-2 p-3 text-left ${method === item.id ? 'border-emerald-500 bg-emerald-50' : 'border-gray-100'}`}><span className={`mb-2 flex h-8 w-8 items-center justify-center rounded-lg text-white ${item.color}`}>{item.id === 'ewallet' ? <Wallet size={15} /> : <CreditCard size={15} />}</span><span className="block text-xs font-bold">{item.label}</span><span className="mt-1 block text-[10px] text-gray-500">{item.id === 'ewallet' ? `Saldo ${formatRupiah(saldo)}` : item.fee ? `+Rp ${item.fee.toLocaleString('id-ID')}` : 'Gratis'}</span>{method === item.id && <Check size={15} className="absolute right-2 top-2 text-emerald-600" />}</button>)}</div></div>)}
         </section>
+        {method === 'ewallet' && !saldoCukup && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+            Saldo E-Wallet kamu <strong>{formatRupiah(saldo)}</strong>, belum cukup untuk total{' '}
+            <strong>{formatRupiah(total)}</strong>. Kurang {formatRupiah(total - saldo)}.{' '}
+            <Link to="/anggota/ewallet" className="font-bold underline">Topup sekarang</Link> atau pilih
+            metode lain.
+          </div>
+        )}
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">Ini adalah simulasi. Tidak ada uang nyata yang diproses.</div>
         {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
-        <button disabled={loading} className="fixed bottom-[72px] left-4 right-4 z-40 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-600 py-3 font-bold text-white shadow-lg disabled:opacity-50">{loading ? <span className="flex justify-center gap-2"><LoaderCircle size={18} className="animate-spin" /> Memproses...</span> : 'Lanjutkan Pembayaran'}</button>
+        <button disabled={loading || (method === 'ewallet' && !saldoCukup)} className="fixed bottom-[72px] left-4 right-4 z-40 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-600 py-3 font-bold text-white shadow-lg disabled:opacity-50">{loading ? <span className="flex justify-center gap-2"><LoaderCircle size={18} className="animate-spin" /> Memproses...</span> : method === 'ewallet' ? `Bayar dengan Saldo E-Wallet (${formatRupiah(total)})` : 'Lanjutkan Pembayaran'}</button>
       </form>
     </div>
   )

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import api from '@/lib/api'
 import useAuthStore from '@/store/authStore'
@@ -7,20 +7,23 @@ const menuLayanan = [
   { to: '/anggota/ppob/pulsa',   icon: 'fa-sim-card',          label: 'Isi Pulsa',     cls: 'from-emerald-500 to-teal-600'    },
   { to: '/anggota/ppob/data',    icon: 'fa-wifi',              label: 'Paket Data',    cls: 'from-blue-500 to-indigo-600'     },
   { to: '/anggota/ppob/listrik', icon: 'fa-bolt',              label: 'Token Listrik', cls: 'from-amber-500 to-orange-600'    },
-  { to: '/anggota/ppob/ewallet', icon: 'fa-wallet',            label: 'Top Up E-Wallet',cls: 'from-purple-500 to-violet-600'  },
+  { to: '/anggota/ppob/ewallet', icon: 'fa-wallet',            label: 'E-Wallet Digital', cls: 'from-purple-500 to-violet-600'   },
 ]
 
 const menuPembayaran = [
-  { to: '/anggota/payment/simpanan/wajib', icon: 'fa-piggy-bank',         label: 'Simpanan Wajib',  cls: 'from-emerald-500 to-teal-600'   },
-  { to: '/anggota/payment/simpanan/sukarela', icon: 'fa-hand-holding-heart', label: 'Sim. Sukarela',  cls: 'from-cyan-500 to-blue-600'    },
-  { to: '/anggota/cicilan',                         icon: 'fa-file-invoice-dollar', label: 'Bayar Cicilan',  cls: 'from-amber-500 to-orange-600'  },
-  { to: '/anggota/payment/riwayat',                 icon: 'fa-receipt',            label: 'Riwayat Bayar',  cls: 'from-slate-500 to-slate-600'    },
+  { to: '/anggota/payment/simpanan/wajib',    icon: 'fa-piggy-bank',          label: 'Simpanan Wajib',  cls: 'from-emerald-500 to-teal-600'  },
+  { to: '/anggota/payment/simpanan/sukarela', icon: 'fa-hand-holding-heart',  label: 'Sim. Sukarela',   cls: 'from-cyan-500 to-blue-600'     },
+  { to: '/anggota/cicilan',                   icon: 'fa-file-invoice-dollar', label: 'Bayar Cicilan',   cls: 'from-amber-500 to-orange-600'  },
+  { to: '/anggota/payment/riwayat',           icon: 'fa-receipt',             label: 'Riwayat Bayar',   cls: 'from-slate-500 to-slate-600'   },
 ]
 
 const statusConfig = {
   success: { cls: 'badge-success', label: 'Berhasil' },
+  sukses:  { cls: 'badge-success', label: 'Berhasil' },
+  berhasil:{ cls: 'badge-success', label: 'Berhasil' },
   pending: { cls: 'badge-pending', label: 'Pending'  },
   failed:  { cls: 'badge-failed',  label: 'Gagal'    },
+  gagal:   { cls: 'badge-failed',  label: 'Gagal'    },
 }
 
 const jenisIcon = {
@@ -30,6 +33,8 @@ const jenisIcon = {
   ewallet:       'fa-wallet',
 }
 
+const fmt = (n) => new Intl.NumberFormat('id-ID').format(Number(n) || 0)
+
 export default function PpobPage() {
   const { user } = useAuthStore()
 
@@ -37,6 +42,15 @@ export default function PpobPage() {
     queryKey: ['ppob-index'],
     queryFn: () => api.get('/anggota/ppob').then(r => r.data),
   })
+
+  const { data: ewData = {} } = useQuery({
+    queryKey: ['anggota-ewallet-saldo'],
+    queryFn: () => api.get('/anggota/ewallet').then(r => r.data?.data || {}),
+    staleTime: 30000,
+  })
+
+  const ewalletSaldo = ewData.saldo || 0
+  const ewalletPending = ewData.topup_pending || 0
 
   return (
     <div>
@@ -58,23 +72,33 @@ export default function PpobPage() {
         </div>
       </div>
 
-      {/* Balance Card */}
+      {/* E-Wallet Saldo Card */}
       <div className="mx-4 mt-4 p-5 rounded-3xl text-white relative overflow-hidden shadow-xl"
-           style={{ background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)' }}>
+           style={{ background: 'linear-gradient(135deg, #5b21b6 0%, #7c3aed 100%)' }}>
         <div className="absolute -top-10 -right-10 w-36 h-36 bg-white/10 rounded-full"></div>
         <div className="relative z-10">
-          <p className="text-white/60 text-xs mb-1">Total Transaksi Bulan Ini</p>
-          <p className="text-2xl font-black">
-            Rp {(data?.total_bulan ?? 0).toLocaleString('id-ID')}
+          <p className="text-white/60 text-xs mb-1 flex items-center gap-1">
+            <i className="fas fa-wallet text-[10px]"></i> Saldo E-Wallet Koperasi
           </p>
-          <p className="text-white/50 text-xs mt-1">{new Date().toLocaleDateString('id-ID',{month:'long',year:'numeric'})} · {user?.nama ?? ''}</p>
+          <p className="text-2xl font-black">Rp {fmt(ewalletSaldo)}</p>
+          <p className="text-white/50 text-xs mt-1">{user?.nama ?? ''}</p>
+          {ewalletPending > 0 && (
+            <p className="text-xs mt-2 bg-amber-400/25 border border-amber-300/40 rounded-lg px-2 py-0.5 font-semibold inline-block">
+              ⏳ {ewalletPending} topup menunggu verifikasi
+            </p>
+          )}
         </div>
-        <span className="absolute top-4 right-4 bg-emerald-500/20 border border-emerald-400/40 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
-          <i className="fas fa-lock mr-1" aria-hidden="true"></i> SIMULASI
-        </span>
+        <div className="absolute bottom-4 right-4 flex gap-2">
+          <Link to="/anggota/ewallet" className="text-xs font-bold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-full transition">
+            + Top Up
+          </Link>
+          <Link to="/anggota/ppob/riwayat-ewallet" className="text-xs font-bold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-full transition">
+            Riwayat
+          </Link>
+        </div>
       </div>
 
-      {/* Menu Layanan */}
+      {/* Menu Layanan PPOB */}
       <div className="mx-4 mt-5">
         <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Layanan PPOB</p>
         <div className="grid grid-cols-4 gap-3">

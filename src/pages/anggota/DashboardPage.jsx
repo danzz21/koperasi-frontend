@@ -25,7 +25,7 @@ export default function DashboardPage() {
     { label: 'PPOB', icon: AlertCircle, color: '#8b5cf6', path: '/anggota/ppob' },
     { label: 'Isi Pulsa', icon: Smartphone, color: '#10b981', path: '/anggota/ppob' },
     { label: 'Token PLN', icon: Zap, color: '#f59e0b', path: '/anggota/ppob' },
-    { label: 'E-Wallet', icon: Wallet, color: '#3b82f6', path: '/anggota/ppob' },
+    { label: 'E-Wallet', icon: Wallet, color: '#3b82f6', path: '/anggota/ewallet' },
     { label: 'Bayar Wajib', icon: PiggyBank, color: '#10b981', path: '/anggota/cicilan' },
     { label: 'Riwayat Bayar', icon: Receipt, color: '#64748b', path: '/anggota/cicilan' },
   ]

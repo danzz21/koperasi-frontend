@@ -1,0 +1,210 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { AlertCircle, ArrowLeft, CheckCircle2, LoaderCircle, PlusCircle, Wallet } from 'lucide-react'
+import api from '@/lib/api'
+import EwalletTransactions from '@/components/anggota/EwalletTransactions'
+
+const fmt = (n) => `Rp ${new Intl.NumberFormat('id-ID').format(Number(n) || 0)}`
+
+const NOMINAT_CEPAT = [20000, 50000, 100000, 200000, 500000, 1000000]
+
+const METODE = [
+  { value: 'transfer', label: 'Transfer Bank' },
+  { value: 'qr', label: 'QRIS' },
+  { value: 'tunai', label: 'Setor Tunai di Kantor' },
+]
+
+/**
+ * Halaman E-Wallet Koperasi.
+ *
+ * Saldo ini terpisah dari simpanan dan dipakai membayar PPOB tanpa biaya
+ * admin. Topup masuk sebagai "menunggu verifikasi" sampai disetujui admin
+ * di Dashboard PPOB.
+ */
+export default function EwalletPage() {
+  const queryClient = useQueryClient()
+  const [nominal, setNominal] = useState('')
+  const [metode, setMetode] = useState('transfer')
+  const [success, setSuccess] = useState(null)
+  const [error, setError] = useState(null)
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['anggota-ewallet'],
+    queryFn: () => api.get('/anggota/ewallet').then(res => res.data?.data ?? {}),
+  })
+
+  const topup = useMutation({
+    mutationFn: payload => api.post('/anggota/ewallet/topup', payload),
+    onSuccess: res => {
+      setSuccess(res.data?.message || 'Permintaan topup terkirim.')
+      setError(null)
+      setNominal('')
+      queryClient.invalidateQueries({ queryKey: ['anggota-ewallet'] })
+      queryClient.invalidateQueries({ queryKey: ['ppob-index'] })
+    },
+    onError: err => {
+      const errors = err.response?.data?.errors
+      setError(
+        errors
+          ? Object.values(errors).flat().join(' ')
+          : err.response?.data?.message || 'Permintaan topup gagal. Coba lagi.',
+      )
+      setSuccess(null)
+    },
+  })
+
+  const submit = event => {
+    event.preventDefault()
+    setSuccess(null)
+    setError(null)
+    topup.mutate({ nominal: Number(nominal), metode })
+  }
+
+  const saldo = data?.saldo ?? 0
+  const pending = data?.topup_pending ?? 0
+
+  return (
+    <div className="min-h-screen bg-emerald-50/40" style={{ paddingBottom: '90px' }}>
+      <header className="member-profile-header">
+        <div className="member-profile-top">
+          <Link to="/anggota/ppob" className="rounded-full bg-white/20 p-2 hover:bg-white/30" aria-label="Kembali">
+            <ArrowLeft size={19} />
+          </Link>
+          <h1>E-Wallet Koperasi</h1>
+          <span className="w-[35px]" />
+        </div>
+
+        <div className="flex flex-col items-center text-center">
+          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15">
+            <Wallet className="h-7 w-7" />
+          </div>
+          <h2 className="!text-lg">Saldo Tersedia</h2>
+          <p className="mt-1 text-3xl font-black">{isLoading ? '...' : fmt(saldo)}</p>
+          <p className="mt-1 text-sm opacity-90">Dipakai untuk bayar PPOB tanpa biaya admin</p>
+        </div>
+      </header>
+
+      <div className="space-y-4 px-4 py-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Total Topup</p>
+            <p className="mt-1 text-sm font-extrabold text-emerald-600">{fmt(data?.total_topup)}</p>
+          </div>
+          <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Total Bayar</p>
+            <p className="mt-1 text-sm font-extrabold text-rose-600">{fmt(data?.total_pembayaran)}</p>
+          </div>
+        </div>
+
+        {pending > 0 && (
+          <div className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-amber-800">
+            <LoaderCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <p className="text-xs font-semibold">
+              {pending} permintaan topup menunggu verifikasi admin. Saldo bertambah setelah
+              disetujui di Dashboard PPOB.
+            </p>
+          </div>
+        )}
+
+        {/* Form Topup */}
+        <form onSubmit={submit} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-bold text-gray-900">
+            <PlusCircle className="h-4 w-4 text-emerald-600" />
+            Top Up Saldo
+          </h3>
+
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-gray-500">Pilih Nominal</p>
+          <div className="mb-3 grid grid-cols-3 gap-2">
+            {NOMINAT_CEPAT.map(value => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setNominal(String(value))}
+                className={`rounded-xl border-2 px-2 py-2 text-xs font-bold transition ${
+                  Number(nominal) === value
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                    : 'border-gray-100 text-gray-600 hover:border-gray-200'
+                }`}
+              >
+                {value >= 1000000 ? `${value / 1000000} Jt` : `${value / 1000} Ribu`}
+              </button>
+            ))}
+          </div>
+
+          <div className="mb-3">
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500">
+              Nominal (Rp)
+            </label>
+            <input
+              type="number"
+              inputMode="numeric"
+              min={10000}
+              max={10000000}
+              step={1000}
+              value={nominal}
+              onChange={e => setNominal(e.target.value)}
+              placeholder="Minimal Rp 10.000"
+              className="input-field"
+              required
+            />
+          </div>
+
+          <div className="mb-4">
+            <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-gray-500">
+              Metode Setoran
+            </label>
+            <select value={metode} onChange={e => setMetode(e.target.value)} className="input-field">
+              {METODE.map(item => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {success && (
+            <div className="mb-3 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{success}</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-3 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={topup.isPending || !nominal}
+            className="btn-primary flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {topup.isPending ? (
+              <>
+                <LoaderCircle className="h-4 w-4 animate-spin" /> Memproses...
+              </>
+            ) : (
+              <>
+                <PlusCircle className="h-4 w-4" /> Kirim Permintaan Topup
+              </>
+            )}
+          </button>
+        </form>
+
+        {/* Riwayat */}
+        <div>
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Riwayat Mutasi</p>
+            <Link to="/anggota/ppob/riwayat-ewallet" className="text-xs font-bold text-emerald-600">
+              Lihat semua →
+            </Link>
+          </div>
+          <EwalletTransactions transactions={data?.riwayat_singkat} loading={isLoading} />
+        </div>
+      </div>
+    </div>
+  )
+}

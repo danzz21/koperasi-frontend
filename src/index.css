@@ -153,8 +153,11 @@ body {
     box-shadow: 0 -4px 20px rgba(0,0,0,.08);
   }
   .nav-item {
-    @apply flex flex-col items-center gap-1 text-gray-500 text-xs font-semibold flex-1 py-1;
+    @apply flex flex-col items-center gap-1 text-gray-500 font-semibold flex-1 py-1 min-w-0;
+    font-size: .62rem;      /* muat 7 menu di layar sempit */
+    text-align: center;
   }
+  .nav-item span { @apply truncate w-full px-0.5; }
   .nav-item.active { @apply text-emerald-600; }
 
   /* ── Button ── */
