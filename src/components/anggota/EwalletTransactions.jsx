@@ -8,6 +8,12 @@ const STATUS = {
   gagal:   { label: 'Gagal',              cls: 'badge-failed' },
 }
 
+const TIPE = {
+  topup:  'Topup',
+  pindah: 'Pindah dari Simpanan',
+  bayar:  'Pembayaran',
+}
+
 /**
  * Daftar mutasi E-Wallet (topup masuk & pembayaran keluar).
  * Dipakai oleh halaman E-Wallet dan halaman riwayat.
@@ -35,8 +41,10 @@ export default function EwalletTransactions({ transactions = [], loading = false
   return (
     <div className="space-y-2">
       {transactions.map((trx) => {
-        const masuk = trx.tipe === 'topup' && trx.status === 'sukses'
+        // Topup & pindah dari simpanan = uang masuk; bayar = uang keluar
+        const masuk = trx.tipe !== 'bayar' && trx.status === 'sukses'
         const badge = STATUS[trx.status] ?? { label: trx.status, cls: 'badge-pending' }
+        const label = TIPE[trx.tipe] ?? trx.tipe
 
         return (
           <div
@@ -61,10 +69,10 @@ export default function EwalletTransactions({ transactions = [], loading = false
 
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-bold text-gray-800">
-                {trx.keterangan || (masuk ? 'Topup E-Wallet' : 'Pembayaran E-Wallet')}
+                {trx.keterangan || label}
               </p>
               <p className="truncate text-xs text-gray-500">
-                {new Date(trx.created_at).toLocaleString('id-ID')}
+                {label} · {new Date(trx.created_at).toLocaleString('id-ID')}
                 {trx.ref_id ? ` • ${trx.ref_id}` : ''}
               </p>
             </div>
