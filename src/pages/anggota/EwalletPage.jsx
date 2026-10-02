@@ -115,6 +115,7 @@ export default function EwalletPage() {
   const pending = data?.topup_pending ?? 0
   const tersedia = data?.simpanan_tersedia ?? {}
   const gatewayAktif = !!data?.gateway_aktif
+  const autoApprove = !!data?.auto_approve
   const rekening = data?.rekening ?? {}
   const totalSimpanan = Number(tersedia.sukarela || 0) + Number(tersedia.pokok || 0)
 
@@ -258,7 +259,7 @@ export default function EwalletPage() {
             </h3>
             <p className="mt-1 text-xs text-violet-700">
               Bayar dengan QRIS (DANA, GoPay, OVO, m-banking) atau Virtual Account. Saldo masuk
-              otomatis setelah pembayaran terkonfirmasi.
+              otomatis setelah pembayaran terkonfirmasi — tanpa perlu persetujuan admin.
             </p>
 
             <div className="mt-3 space-y-2">
@@ -300,6 +301,11 @@ export default function EwalletPage() {
             <PlusCircle className="h-4 w-4 text-emerald-600" />
             Topup via Transfer Manual
           </h3>
+          <p className="mt-1 text-xs text-gray-500">
+            {autoApprove
+              ? 'Unggah bukti transfer dan saldo langsung ditambahkan — tanpa approval admin.'
+              : 'Transfer ke rekening koperasi, lalu unggah bukti. Saldo masuk setelah admin memverifikasi.'}
+          </p>
 
           <p className="mb-2 mt-3 text-xs font-bold uppercase tracking-wider text-gray-500">Pilih Nominal</p>
           <div className="mb-3 grid grid-cols-3 gap-2">
@@ -401,12 +407,17 @@ export default function EwalletPage() {
                 <p className="text-gray-500">a.n. {rekening.atas}</p>
                 {hasil.kode_va && (
                   <p className="pt-1 text-gray-600">
-                    Tulis kode VA di berita transfer:{' '}
+                    Tulis kode referensi di berita transfer:{' '}
                     <span className="font-mono font-bold text-violet-700">{hasil.kode_va}</span>
                   </p>
                 )}
                 <p className="pt-1 font-bold text-gray-700">Nominal: {fmt(hasil.nominal)}</p>
                 <p className="text-[11px] text-gray-400">Ref: {hasil.ref_id}</p>
+                {hasil.kode_va && (
+                  <p className="text-[11px] text-gray-500">
+                    Kode ini dipakai admin untuk mencocokkan transfer, bukan nomor Virtual Account bank.
+                  </p>
+                )}
               </div>
             )}
 
