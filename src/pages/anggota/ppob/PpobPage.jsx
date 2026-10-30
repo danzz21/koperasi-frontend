@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import api from '@/lib/api'
 import useAuthStore from '@/store/authStore'
+import { usePpobCatalog } from '@/hooks/usePpobData'
+import { useWallet } from '@/hooks/useWalletData'
 
 const menuLayanan = [
   { to: '/anggota/ppob/pulsa',   icon: 'fa-sim-card',          label: 'Isi Pulsa',     cls: 'from-emerald-500 to-teal-600'    },
@@ -38,16 +38,8 @@ const fmt = (n) => new Intl.NumberFormat('id-ID').format(Number(n) || 0)
 export default function PpobPage() {
   const { user } = useAuthStore()
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['ppob-index'],
-    queryFn: () => api.get('/anggota/ppob').then(r => r.data),
-  })
-
-  const { data: ewData = {} } = useQuery({
-    queryKey: ['anggota-ewallet-saldo'],
-    queryFn: () => api.get('/anggota/ewallet').then(r => r.data?.data || {}),
-    staleTime: 30000,
-  })
+  const { data, isLoading } = usePpobCatalog()
+  const { data: ewData = {} } = useWallet({ queryKey: ['anggota-ewallet-saldo'], staleTime: 30000 })
 
   const ewalletSaldo = ewData.saldo || 0
   const ewalletPending = ewData.topup_pending || 0

@@ -4,7 +4,7 @@ import useAuthStore from '@/store/authStore'
 
 const avatarColors = ['#10b981', '#06b6d4', '#0ea5e9', '#8b5cf6', '#f59e0b']
 
-export default function MemberHeader({ title, icon: Icon, back = false, notification = false }) {
+export default function MemberHeader({ title, icon: Icon, back = false }) {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const name = user?.nama || user?.nama_lengkap || 'Anggota'
@@ -44,7 +44,7 @@ export default function MemberHeader({ title, icon: Icon, back = false, notifica
           type="button"
           className="member-header-action"
           aria-label="Notifikasi"
-          onClick={() => notification && navigate('/anggota/cicilan')}
+          onClick={() => navigate('/anggota/notifikasi')}
         >
           <Bell size={19} />
         </button>

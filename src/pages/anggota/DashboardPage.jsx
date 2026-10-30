@@ -1,16 +1,12 @@
-import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import api from '@/lib/api'
 import { Wallet, HandCoins, Home, Zap, PiggyBank, Receipt, Gift, Handshake, FileText, TrendingUp, Smartphone, AlertCircle } from 'lucide-react'
 import MemberHeader from '@/components/anggota/MemberHeader'
+import { useDashboard } from '@/hooks/useMemberData'
 
 export default function DashboardPage() {
   const navigate = useNavigate()
   // Fetch dashboard data
-  const { data: dashboard = {}, isLoading } = useQuery({
-    queryKey: ['anggota-dashboard'],
-    queryFn: () => api.get('/anggota/dashboard').then(r => r.data?.data || {}),
-  })
+  const { data: dashboard = {}, isLoading } = useDashboard()
 
   const menuItems = [
     { label: 'Sim. Pokok', icon: Home, color: '#10b981', path: '/anggota/simpanan' },

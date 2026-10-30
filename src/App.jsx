@@ -6,6 +6,7 @@ import InstallBanner from '@/components/InstallBanner'
 // Auth
 import LoginPage    from '@/pages/auth/LoginPage'
 import RegisterPage from '@/pages/auth/RegisterPage'
+import ForgotPasswordPage from '@/pages/auth/ForgotPassword'
 
 // Anggota
 import AnggotaLayout    from '@/layouts/AnggotaLayout'
@@ -14,6 +15,8 @@ import EditProfilPage   from '@/pages/anggota/EditProfilPage'
 import DashboardPage    from '@/pages/anggota/DashboardPage'
 import SimpananPage     from '@/pages/anggota/SimpananPage'
 import PinjamanPage     from '@/pages/anggota/PinjamanPage'
+import PengunduranDiriPage from '@/pages/anggota/PengunduranDiriPage'
+import NotifikasiPage    from '@/pages/anggota/NotifikasiPage'
 import CicilanPage      from '@/pages/anggota/CicilanPage'
 import ProfilPage       from '@/pages/anggota/ProfilPage'
 import PpobPage         from '@/pages/anggota/ppob/PpobPage'
@@ -97,6 +100,7 @@ export default function App() {
         <Route path="/" element={<RedirectIfAuth />} />
         <Route path="/login"   element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
 
         {/* ── Onboarding anggota (tanpa bottom nav, sebelum profil lengkap) ── */}
         <Route path={ONBOARDING_PATH} element={
@@ -113,6 +117,8 @@ export default function App() {
           <Route path="dashboard"  element={<DashboardPage />} />
           <Route path="simpanan"   element={<SimpananPage />} />
           <Route path="pinjaman"   element={<PinjamanPage />} />
+          <Route path="pengunduran-diri" element={<PengunduranDiriPage />} />
+          <Route path="notifikasi" element={<NotifikasiPage />} />
           <Route path="cicilan"    element={<CicilanPage />} />
           <Route path="profil"     element={<ProfilPage />} />
           <Route path="profil/edit" element={<EditProfilPage />} />

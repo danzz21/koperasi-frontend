@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Check, CreditCard, LoaderCircle, ShoppingCart, Wallet } from 'lucide-react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import api from '@/lib/api'
+import { Link } from 'react-router-dom'
+import { usePpobConfirmation } from '@/hooks/usePpobConfirmation'
 
 const paymentMethods = [
   { id: 'ewallet',  label: 'Saldo E-Wallet Koperasi', group: 'Saldo Koperasi', fee: 0, color: 'bg-violet-600' },
@@ -20,31 +19,17 @@ const formatRupiah = (n) => `Rp ${new Intl.NumberFormat('id-ID').format(Number(n
 
 export default function ConfirmationPage() {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const { state } = useLocation()
-  const order = state?.order
-  const [method, setMethod] = useState('ewallet')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const selectedMethod = paymentMethods.find(item => item.id === method)
-  const total = useMemo(() => Number(order?.harga || 0) + Number(selectedMethod?.fee || 0), [order, selectedMethod])
-
-  // Saldo E-Wallet untuk menentukan metode default & kecukupan saldo
-  const { data: wallet = {} } = useQuery({
-    queryKey: ['anggota-ewallet'],
-    queryFn: () => api.get('/anggota/ewallet').then(res => res.data?.data ?? {}),
-    staleTime: 30000,
-  })
-
-  const saldo = Number(wallet.saldo || 0)
-  const saldoCukup = saldo >= total
-
-  // Default: pakai saldo e-wallet bila cukup, selain itu QRIS
-  useEffect(() => {
-    if (!order) return
-    const hargaProduk = Number(order.harga || 0)
-    setMethod(saldo >= hargaProduk ? 'ewallet' : 'qris')
-  }, [order, saldo])
+  const {
+    order,
+    method,
+    setMethod,
+    total,
+    saldo,
+    saldoCukup,
+    error,
+    submit,
+    isSubmitting,
+  } = usePpobConfirmation()
 
   if (!order) {
     return (
@@ -53,44 +38,6 @@ export default function ConfirmationPage() {
         <button type="button" onClick={() => navigate('/anggota/ppob')} className="mt-4 rounded-xl bg-emerald-600 px-4 py-2 font-bold text-white">Kembali ke PPOB</button>
       </div>
     )
-  }
-
-  const submit = async event => {
-    event.preventDefault()
-    setLoading(true)
-    setError('')
-
-    if (method === 'ewallet' && !saldoCukup) {
-      setLoading(false)
-      setError(
-        `Saldo E-Wallet kamu ${formatRupiah(saldo)}, belum cukup untuk total ${formatRupiah(total)}. Topup dulu saldomu.`,
-      )
-      return
-    }
-    try {
-      const response = await api.post('/anggota/ppob/order', {
-        ...order,
-        payment_method: method,
-      }, { timeout: 20000 })
-      const orderId = response.data?.data?.order_id || response.data?.order_id
-      if (!orderId) throw new Error('Server tidak mengembalikan order ID.')
-
-      // Saldo e-wallet & riwayat PPOB berubah setelah order dibuat
-      queryClient.invalidateQueries({ queryKey: ['anggota-ewallet'] })
-      queryClient.invalidateQueries({ queryKey: ['ppob-index'] })
-      queryClient.invalidateQueries({ queryKey: ['ppob-riwayat'] })
-
-      navigate(`/anggota/ppob/status/${orderId}`)
-    } catch (err) {
-      const validation = err.response?.data?.errors
-      const details = validation ? Object.values(validation).flat().join(' ') : ''
-      const message = err.code === 'ECONNABORTED'
-        ? 'Server terlalu lama merespons. Pastikan backend dan database sedang berjalan, lalu coba lagi.'
-        : details || err.response?.data?.message || err.message || 'Pesanan belum dapat diproses.'
-      setError(message)
-    } finally {
-      setLoading(false)
-    }
   }
 
   return (
@@ -121,7 +68,7 @@ export default function ConfirmationPage() {
         )}
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">Ini adalah simulasi. Tidak ada uang nyata yang diproses.</div>
         {error && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
-        <button disabled={loading || (method === 'ewallet' && !saldoCukup)} className="fixed bottom-[72px] left-4 right-4 z-40 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-600 py-3 font-bold text-white shadow-lg disabled:opacity-50">{loading ? <span className="flex justify-center gap-2"><LoaderCircle size={18} className="animate-spin" /> Memproses...</span> : method === 'ewallet' ? `Bayar dengan Saldo E-Wallet (${formatRupiah(total)})` : 'Lanjutkan Pembayaran'}</button>
+        <button disabled={isSubmitting || (method === 'ewallet' && !saldoCukup)} className="fixed bottom-[72px] left-4 right-4 z-40 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-600 py-3 font-bold text-white shadow-lg disabled:opacity-50">{isSubmitting ? <span className="flex justify-center gap-2"><LoaderCircle size={18} className="animate-spin" /> Memproses...</span> : method === 'ewallet' ? `Bayar dengan Saldo E-Wallet (${formatRupiah(total)})` : 'Lanjutkan Pembayaran'}</button>
       </form>
     </div>
   )

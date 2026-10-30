@@ -1,9 +1,8 @@
 import { Navigate, useNavigate } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, ClipboardList, LogOut, Sparkles } from 'lucide-react'
-import api from '@/lib/api'
 import useAuthStore from '@/store/authStore'
 import ProfileForm from '@/components/profile/ProfileForm'
+import { useOnboarding, useOnboardingSubmit } from '@/hooks/useMemberData'
 
 const REQUIRED_FIELDS = [
   'nama_lengkap',
@@ -33,13 +32,14 @@ const FIELD_LABELS = {
  */
 export default function OnboardingPage() {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const { user, setUser, logout } = useAuthStore()
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['anggota-onboarding'],
-    queryFn: () => api.get('/anggota/onboarding').then((res) => res.data),
-    retry: 0,
+  const { data, isLoading, error } = useOnboarding()
+  const onboardingMutation = useOnboardingSubmit({
+    onSuccess: result => {
+      setUser(result.user)
+      navigate('/anggota/dashboard', { replace: true })
+    },
   })
 
   // Sudah lengkap (mis. state localStorage kedaluwarsa) → langsung ke dasbor
@@ -54,19 +54,7 @@ export default function OnboardingPage() {
 
   const missingFields = data?.missing_fields ?? REQUIRED_FIELDS
 
-  const handleSubmit = async (payload) => {
-    const { data: result } = await api.post('/anggota/onboarding', payload)
-
-    setUser(result.user)
-    queryClient.setQueryData(['anggota-onboarding'], (prev) => ({
-      ...prev,
-      user: result.user,
-      needs_onboarding: false,
-    }))
-    queryClient.invalidateQueries({ queryKey: ['anggota-profil'] })
-
-    navigate('/anggota/dashboard', { replace: true })
-  }
+  const handleSubmit = payload => onboardingMutation.mutateAsync(payload)
 
   const handleLogout = async () => {
     await logout()

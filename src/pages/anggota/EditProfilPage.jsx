@@ -1,9 +1,8 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
-import api from '@/lib/api'
 import useAuthStore from '@/store/authStore'
 import ProfileForm from '@/components/profile/ProfileForm'
+import { useProfile, useProfileUpdate } from '@/hooks/useMemberData'
 
 const REQUIRED_FIELDS = [
   'nama_lengkap',
@@ -18,24 +17,17 @@ const REQUIRED_FIELDS = [
 /** Halaman edit profil anggota (setelah onboarding selesai). */
 export default function EditProfilPage() {
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const { setUser } = useAuthStore()
 
-  const { data: profil, isLoading } = useQuery({
-    queryKey: ['anggota-profil'],
-    queryFn: () => api.get('/anggota/profil').then((res) => res.data?.data || {}),
+  const { data: profil, isLoading } = useProfile()
+  const updateMutation = useProfileUpdate({
+    onSuccess: ({ user }) => {
+      if (user) setUser(user)
+      navigate('/anggota/profil', { replace: true })
+    },
   })
 
-  const handleSubmit = async (payload) => {
-    const { data } = await api.post('/anggota/profil/update', payload)
-
-    if (data?.user) {
-      setUser(data.user)
-    }
-
-    queryClient.invalidateQueries({ queryKey: ['anggota-profil'] })
-    navigate('/anggota/profil', { replace: true })
-  }
+  const handleSubmit = payload => updateMutation.mutateAsync(payload)
 
   if (isLoading) {
     return <div className="p-6 text-center text-sm text-gray-500">Memuat data...</div>

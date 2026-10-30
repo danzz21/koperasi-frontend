@@ -1,23 +1,13 @@
-import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import api from '@/lib/api'
+import { usePaymentStatus, useSimulatePayment } from '@/hooks/usePaymentData'
 
 export default function StatusPage() {
   const navigate = useNavigate()
   const { orderId } = useParams()
-  const [processing, setProcessing] = useState(false)
-  const { data: payment, refetch } = useQuery({
-    queryKey: ['payment-status', orderId],
-    queryFn: () => api.get(`/anggota/payment/status/${orderId}`).then(response => response.data?.data),
-  })
+  const { data: payment, refetch } = usePaymentStatus(orderId)
+  const simulation = useSimulatePayment({ onSuccess: () => refetch() })
 
-  const simulatePayment = async () => {
-    setProcessing(true)
-    await api.post('/anggota/payment/simulasi-bayar', { order_id: orderId })
-    await refetch()
-    setProcessing(false)
-  }
+  const simulatePayment = () => simulation.mutate(orderId)
 
   return (
     <div className="p-6 space-y-4 text-center">
@@ -25,8 +15,8 @@ export default function StatusPage() {
       <h1 className="font-bold text-xl">Status Pembayaran</h1>
       <p className="text-gray-600">{payment?.status || 'Memuat...'}</p>
       {payment?.status === 'pending' && (
-        <button onClick={simulatePayment} disabled={processing} className="w-full rounded-xl bg-emerald-600 p-3 font-bold text-white">
-          {processing ? 'Memproses...' : 'Simulasikan Pembayaran'}
+        <button onClick={simulatePayment} disabled={simulation.isPending} className="w-full rounded-xl bg-emerald-600 p-3 font-bold text-white">
+          {simulation.isPending ? 'Memproses...' : 'Simulasikan Pembayaran'}
         </button>
       )}
       <button onClick={() => navigate('/anggota/dashboard')} className="w-full rounded-xl border p-3 font-semibold">

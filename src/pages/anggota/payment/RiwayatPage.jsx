@@ -1,13 +1,9 @@
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import api from '@/lib/api'
+import { usePaymentHistory } from '@/hooks/usePaymentData'
 
 export default function RiwayatPage() {
   const navigate = useNavigate()
-  const { data: payments = [], isLoading } = useQuery({
-    queryKey: ['payment-history'],
-    queryFn: () => api.get('/anggota/payment/riwayat').then(response => response.data?.data || []),
-  })
+  const { data: payments = [], isLoading } = usePaymentHistory()
 
   return (
     <div className="p-6 space-y-4">

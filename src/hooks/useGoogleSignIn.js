@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import api from '@/lib/api'
+import { signInWithGoogle } from '@/services/authService'
 import useAuthStore from '@/store/authStore'
 
 const GIS_SCRIPT_SRC = 'https://accounts.google.com/gsi/client'
@@ -60,7 +60,7 @@ export function useGoogleSignIn({ onSuccess, onError } = {}) {
     setError(null)
 
     try {
-      const { data } = await api.post('/auth/google', { credential: response?.credential })
+      const data = await signInWithGoogle(response?.credential)
 
       applyAuth(data)
       callbacksRef.current.onSuccess?.(data.user)

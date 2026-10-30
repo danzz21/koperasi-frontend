@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, PlusCircle, Wallet } from 'lucide-react'
-import api from '@/lib/api'
 import EwalletTransactions from '@/components/anggota/EwalletTransactions'
+import { useWallet, useWalletHistory } from '@/hooks/useWalletData'
 
 const fmt = (n) => `Rp ${new Intl.NumberFormat('id-ID').format(Number(n) || 0)}`
 
@@ -21,15 +20,8 @@ export default function RiwayatEwalletPage() {
   const [filter, setFilter] = useState('all')
 
   // Saldo diambil dari query yang sama dengan halaman E-Wallet (cache React Query)
-  const { data: summary } = useQuery({
-    queryKey: ['anggota-ewallet'],
-    queryFn: () => api.get('/anggota/ewallet').then(res => res.data?.data ?? {}),
-  })
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['anggota-ewallet-riwayat'],
-    queryFn: () => api.get('/anggota/ewallet/riwayat').then(res => res.data?.data ?? []),
-  })
+  const { data: summary } = useWallet()
+  const { data, isLoading } = useWalletHistory()
 
   const transaksi = (data ?? []).filter(item => filter === 'all' || item.tipe === filter)
 

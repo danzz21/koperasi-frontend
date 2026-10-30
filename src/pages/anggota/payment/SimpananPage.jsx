@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ArrowLeft, Banknote, Check, CreditCard, LoaderCircle, WalletCards } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
-import api from '@/lib/api'
+import { useCreateSavingsPayment } from '@/hooks/usePaymentData'
 
 const config = {
   pokok: { label: 'Simpanan Pokok', minimum: 10000, icon: '🏦', description: 'Setoran awal wajib anggota dan dapat dicicil maksimal 10 kali.' },
@@ -27,8 +27,22 @@ export default function SimpananPaymentPage() {
   const [nominal, setNominal] = useState('')
   const [tenor, setTenor] = useState(jenis === 'pokok' ? '10' : '1')
   const [method, setMethod] = useState('qris')
-  const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const paymentMutation = useCreateSavingsPayment({
+    onSuccess: response => {
+      const orderId = response.data?.order_id || response.data?.data?.order_id
+      if (!orderId) {
+        setMessage('Server tidak mengembalikan order ID.')
+        return
+      }
+      navigate(`/anggota/payment/status/${orderId}`)
+    },
+    onError: error => {
+      const validation = error.response?.data?.errors
+      const details = validation ? Object.values(validation).flat().join(' ') : ''
+      setMessage(details || error.response?.data?.message || error.message || 'Pengajuan simpanan gagal.')
+    },
+  })
   const selectedMethod = methods.find(item => item.id === method)
   const amount = Number(nominal || 0)
   const admin = selectedMethod?.fee || 0
@@ -46,25 +60,13 @@ export default function SimpananPaymentPage() {
       setMessage(`Nominal minimum ${formatRupiah(current.minimum)}.`)
       return
     }
-    setLoading(true)
     setMessage('')
-    try {
-      const response = await api.post('/anggota/payment/proses-simpanan', {
-        nominal: amount,
-        payment_method: method,
-        jenis,
-        tenor: Number(tenor),
-      })
-      const orderId = response.data?.order_id || response.data?.data?.order_id
-      if (!orderId) throw new Error('Server tidak mengembalikan order ID.')
-      navigate(`/anggota/payment/status/${orderId}`)
-    } catch (error) {
-      const validation = error.response?.data?.errors
-      const details = validation ? Object.values(validation).flat().join(' ') : ''
-      setMessage(details || error.response?.data?.message || error.message || 'Pengajuan simpanan gagal.')
-    } finally {
-      setLoading(false)
-    }
+    paymentMutation.mutate({
+      nominal: amount,
+      payment_method: method,
+      jenis,
+      tenor: Number(tenor),
+    })
   }
 
   return (
@@ -106,7 +108,7 @@ export default function SimpananPaymentPage() {
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">Mode simulasi aktif. Tidak ada uang nyata yang diproses.</div>
         <section className="rounded-2xl border-2 border-emerald-200 bg-gradient-to-br from-emerald-50 to-cyan-50 p-4"><div className="flex justify-between text-sm"><span className="text-gray-600">Nominal simpanan</span><b>{formatRupiah(amount)}</b></div><div className="mt-2 flex justify-between text-sm"><span className="text-gray-600">Biaya admin</span><b>{formatRupiah(admin)}</b></div><div className="mt-3 flex justify-between border-t border-emerald-200 pt-3"><span className="font-bold">Total pembayaran</span><b className="text-xl text-emerald-600">{formatRupiah(total)}</b></div></section>
         {message && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{message}</div>}
-        <button disabled={!valid || loading} className="fixed bottom-[72px] left-4 right-4 z-40 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-600 py-3 font-bold text-white shadow-lg disabled:opacity-50">{loading ? <span className="flex justify-center gap-2"><LoaderCircle size={18} className="animate-spin" /> Memproses...</span> : valid ? `Lanjutkan Pembayaran — ${formatRupiah(total)}` : 'Masukkan Nominal Setoran'}</button>
+        <button disabled={!valid || paymentMutation.isPending} className="fixed bottom-[72px] left-4 right-4 z-40 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-600 py-3 font-bold text-white shadow-lg disabled:opacity-50">{paymentMutation.isPending ? <span className="flex justify-center gap-2"><LoaderCircle size={18} className="animate-spin" /> Memproses...</span> : valid ? `Lanjutkan Pembayaran — ${formatRupiah(total)}` : 'Masukkan Nominal Setoran'}</button>
       </form>
     </div>
   )

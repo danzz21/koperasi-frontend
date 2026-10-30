@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import api from '@/lib/api'
+import { useSavings } from '@/hooks/useMemberData'
 import { PiggyBank, ArrowRight, TrendingUp } from 'lucide-react'
 import MemberHeader from '@/components/anggota/MemberHeader'
 
@@ -15,10 +14,7 @@ export default function SimpananPage() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('pokok')
 
-  const { data: simpanan = {}, isLoading } = useQuery({
-    queryKey: ['anggota-simpanan'],
-    queryFn: () => api.get('/anggota/simpanan').then(r => r.data?.data || {}),
-  })
+  const { data: simpanan = {}, isLoading } = useSavings()
 
   const tabData = {
     pokok: {

@@ -119,6 +119,12 @@ export default function LoginPage() {
             Belum punya akun?{' '}
             <Link to="/register" className="text-emerald-600 font-bold hover:underline">Daftar Sekarang</Link>
           </p>
+          {/* forgot password link */}
+          <p className="text-center text-sm text-gray-500 mt-2">
+            <Link to="/auth/forgot-password" className="text-emerald-600 font-bold hover:underline">
+              Lupa password?
+            </Link>
+          </p>
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">

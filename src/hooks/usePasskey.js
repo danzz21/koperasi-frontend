@@ -1,6 +1,14 @@
 import { useCallback, useState } from 'react'
-import api from '@/lib/api'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import useAuthStore from '@/store/authStore'
+import {
+  deletePasskey,
+  getPasskeyLoginOptions,
+  getPasskeyRegistrationOptions,
+  getPasskeys,
+  verifyPasskeyLogin,
+  verifyPasskeyRegistration,
+} from '@/services/authService'
 import {
   credentialToPayload,
   describePasskeyError,
@@ -37,10 +45,7 @@ export function usePasskey() {
     setError(null)
 
     try {
-      const { data } = await api.post(
-        '/auth/passkey/login/options',
-        username ? { username } : {},
-      )
+      const { data } = await getPasskeyLoginOptions(username ? { username } : {})
 
       const credential = await navigator.credentials.get({
         publicKey: prepareRequestOptions(data.options),
@@ -48,7 +53,7 @@ export function usePasskey() {
 
       if (!credential) throw new Error('Login biometrik dibatalkan.')
 
-      const { data: result } = await api.post('/auth/passkey/login/verify', {
+      const { data: result } = await verifyPasskeyLogin({
         ceremony_id: data.ceremony_id,
         credential: credentialToPayload(credential),
       })
@@ -74,7 +79,7 @@ export function usePasskey() {
     setError(null)
 
     try {
-      const { data } = await api.post('/auth/passkey/register/options')
+      const { data } = await getPasskeyRegistrationOptions()
 
       const credential = await navigator.credentials.create({
         publicKey: prepareCreationOptions(data.options),
@@ -82,7 +87,7 @@ export function usePasskey() {
 
       if (!credential) throw new Error('Pendaftaran biometrik dibatalkan.')
 
-      const { data: result } = await api.post('/auth/passkey/register/verify', {
+      const { data: result } = await verifyPasskeyRegistration({
         device_name: deviceName,
         credential: credentialToPayload(credential),
       })
@@ -98,15 +103,11 @@ export function usePasskey() {
   }, [])
 
   const list = useCallback(async () => {
-    const { data } = await api.get('/auth/passkey')
-
-    return data?.data ?? []
+    return getPasskeys()
   }, [])
 
   const remove = useCallback(async (id) => {
-    const { data } = await api.delete(`/auth/passkey/${id}`)
-
-    return data
+    return deletePasskey(id)
   }, [])
 
   const clearError = useCallback(() => setError(null), [])
@@ -123,6 +124,27 @@ export function usePasskey() {
     error,
     supported: isWebAuthnSupported(),
   }
+}
+
+export function usePasskeys(enabled = true) {
+  return useQuery({
+    queryKey: ['anggota-passkeys'],
+    queryFn: getPasskeys,
+    enabled,
+  })
+}
+
+export function useRemovePasskey(options) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: deletePasskey,
+    ...options,
+    onSuccess: async (...args) => {
+      await queryClient.invalidateQueries({ queryKey: ['anggota-passkeys'] })
+      await options?.onSuccess?.(...args)
+    },
+  })
 }
 
 export default usePasskey

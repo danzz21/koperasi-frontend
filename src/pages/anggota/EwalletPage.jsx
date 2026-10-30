@@ -1,12 +1,10 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   AlertCircle, ArrowDownToLine, ArrowLeft, ArrowRightLeft, CheckCircle2,
   LoaderCircle, PlusCircle, Upload, Wallet,
 } from 'lucide-react'
-import api from '@/lib/api'
 import EwalletTransactions from '@/components/anggota/EwalletTransactions'
+import { useWalletPage } from '@/hooks/useWalletPage'
 
 const fmt = (n) => `Rp ${new Intl.NumberFormat('id-ID').format(Number(n) || 0)}`
 
@@ -31,14 +29,6 @@ const METODE_MANUAL = [
   { value: 'tunai', label: 'Setor Tunai di Kantor' },
 ]
 
-const refresh = queryClient => {
-  queryClient.invalidateQueries({ queryKey: ['anggota-ewallet'] })
-  queryClient.invalidateQueries({ queryKey: ['anggota-ewallet-riwayat'] })
-  queryClient.invalidateQueries({ queryKey: ['anggota-saldo-simpanan'] })
-  queryClient.invalidateQueries({ queryKey: ['simpanan'] })
-  queryClient.invalidateQueries({ queryKey: ['ppob-index'] })
-}
-
 /**
  * Halaman E-Wallet Koperasi.
  *
@@ -48,91 +38,37 @@ const refresh = queryClient => {
  * 3. Transfer manual ke rekening koperasi + unggah bukti (verifikasi admin)
  */
 export default function EwalletPage() {
-  const queryClient = useQueryClient()
-
-  const [nominal, setNominal] = useState('')
-  const [metode, setMetode] = useState('transfer_bca')
-  const [pindahNominal, setPindahNominal] = useState('')
-  const [pindahJenis, setPindahJenis] = useState('sukarela')
-  const [bukti, setBukti] = useState(null)
-  const [hasil, setHasil] = useState(null)
-  const [sukses, setSukses] = useState(null)
-  const [error, setError] = useState(null)
-
-  const { data, isLoading } = useQuery({
-    queryKey: ['anggota-ewallet'],
-    queryFn: () => api.get('/anggota/ewallet').then(res => res.data?.data ?? {}),
-  })
-
-  const pesanError = err => {
-    const errors = err?.response?.data?.errors
-    setError(errors ? Object.values(errors).flat().join(' ') : err?.response?.data?.message || err?.message || 'Gagal memproses.')
-  }
-
-  const topup = useMutation({
-    mutationFn: payload => api.post('/anggota/ewallet/topup', payload),
-    onSuccess: res => {
-      setSukses(res.data?.message)
-      setError(null)
-      setHasil(res.data?.data ?? null)
-      setNominal('')
-      refresh(queryClient)
-    },
-    onError: pesanError,
-  })
-
-  const pindah = useMutation({
-    mutationFn: payload => api.post('/anggota/ewallet/pindah', payload),
-    onSuccess: res => {
-      setSukses(res.data?.message)
-      setError(null)
-      setPindahNominal('')
-      refresh(queryClient)
-    },
-    onError: pesanError,
-  })
-
-  const unggahBukti = useMutation({
-    mutationFn: form => {
-      const payload = new FormData()
-      payload.append('id', hasil.id)
-      payload.append('bukti', form)
-
-      return api.post('/anggota/ewallet/bukti', payload, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-    },
-    onSuccess: res => {
-      setSukses(res.data?.message)
-      setError(null)
-      setBukti(null)
-      refresh(queryClient)
-    },
-    onError: pesanError,
-  })
-
-  const saldo = data?.saldo ?? 0
-  const pending = data?.topup_pending ?? 0
-  const tersedia = data?.simpanan_tersedia ?? {}
-  const gatewayAktif = !!data?.gateway_aktif
-  const autoApprove = !!data?.auto_approve
-  const rekening = data?.rekening ?? {}
-  const totalSimpanan = Number(tersedia.sukarela || 0) + Number(tersedia.pokok || 0)
-
-  const kirimTopup = event => {
-    event.preventDefault()
-    setSukses(null)
-    setError(null)
-    setHasil(null)
-    topup.mutate({ nominal: Number(nominal), metode })
-  }
-
-  const kirimPindah = event => {
-    event.preventDefault()
-    setSukses(null)
-    setError(null)
-    pindah.mutate({ nominal: Number(pindahNominal), jenis: pindahJenis })
-  }
+  const {
+    data,
+    isLoading,
+    nominal,
+    setNominal,
+    metode,
+    setMetode,
+    pindahNominal,
+    setPindahNominal,
+    pindahJenis,
+    setPindahJenis,
+    bukti,
+    setBukti,
+    hasil,
+    sukses,
+    error,
+    setError,
+    setSukses,
+    saldo,
+    pending,
+    gatewayAktif,
+    autoApprove,
+    rekening,
+    totalSimpanan,
+    kirimTopup,
+    kirimPindah,
+    uploadProof,
+    topupPending,
+    pindahPending,
+    proofPending,
+  } = useWalletPage()
 
   return (
     <div className="min-h-screen bg-emerald-50/40" style={{ paddingBottom: '90px' }}>
@@ -238,10 +174,10 @@ export default function EwalletPage() {
 
             <button
               type="submit"
-              disabled={pindah.isPending || !pindahNominal}
+              disabled={pindahPending || !pindahNominal}
               className="btn-primary mt-3 flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {pindah.isPending ? (
+              {pindahPending ? (
                 <><LoaderCircle className="h-4 w-4 animate-spin" /> Memindahkan...</>
               ) : (
                 <><ArrowRightLeft className="h-4 w-4" /> Pindahkan ke E-Wallet</>
@@ -360,10 +296,10 @@ export default function EwalletPage() {
 
           <button
             type="submit"
-            disabled={topup.isPending || !nominal}
+            disabled={topupPending || !nominal}
             className="btn-primary flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {topup.isPending ? (
+            {topupPending ? (
               <><LoaderCircle className="h-4 w-4 animate-spin" /> Memproses...</>
             ) : (
               <><ArrowDownToLine className="h-4 w-4" /> Kirim Permintaan Topup</>
@@ -432,11 +368,11 @@ export default function EwalletPage() {
                 />
                 <button
                   type="button"
-                  onClick={() => bukti && unggahBukti.mutate(bukti)}
-                  disabled={!bukti || unggahBukti.isPending}
+                  onClick={uploadProof}
+                  disabled={!bukti || proofPending}
                   className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-xs font-bold text-white disabled:opacity-50"
                 >
-                  {unggahBukti.isPending ? (
+                  {proofPending ? (
                     <><LoaderCircle className="h-4 w-4 animate-spin" /> Mengunggah...</>
                   ) : (
                     <><Upload className="h-4 w-4" /> Kirim Bukti</>

@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '@/store/authStore'
-import api from '@/lib/api'
-import { usePasskey } from '@/hooks/usePasskey'
+import { usePasskey, usePasskeys, useRemovePasskey } from '@/hooks/usePasskey'
+import { useProfile } from '@/hooks/useMemberData'
 import PasskeySetupModal from '@/pages/auth/PasskeySetupModal'
 import {
   Edit2,
+  ArrowUpRight,
   Fingerprint,
   Landmark,
   LogOut,
@@ -21,14 +21,10 @@ import {
 export default function ProfilPage() {
   const navigate = useNavigate()
   const { user, logout } = useAuthStore()
-  const { listDevices, removeDevice, supported: passkeySupported } = usePasskey()
+  const { supported: passkeySupported } = usePasskey()
   const [showPasskeyModal, setShowPasskeyModal] = useState(false)
-
-  const { data: passkeys = [], refetch: refetchPasskeys } = useQuery({
-    queryKey: ['anggota-passkeys'],
-    queryFn: listDevices,
-    enabled: passkeySupported,
-  })
+  const { data: passkeys = [] } = usePasskeys(passkeySupported)
+  const removePasskey = useRemovePasskey()
 
   const handleRemovePasskey = async (id) => {
     if (!confirm('Hapus perangkat ini? Kamu tidak bisa lagi login biometrik dari perangkat tersebut.')) {
@@ -36,17 +32,13 @@ export default function ProfilPage() {
     }
 
     try {
-      await removeDevice(id)
-      refetchPasskeys()
+      await removePasskey.mutateAsync(id)
     } catch {
       alert('Gagal menghapus perangkat. Coba lagi.')
     }
   }
 
-  const { data: profil = {}, isLoading } = useQuery({
-    queryKey: ['anggota-profil'],
-    queryFn: () => api.get('/anggota/profil').then(r => r.data?.data || {}),
-  })
+  const { data: profil = {}, isLoading } = useProfile()
 
   const handleLogout = async () => {
     if (confirm('Yakin ingin logout?')) {
@@ -258,6 +250,21 @@ export default function ProfilPage() {
             </div>
           </div>
         </div>
+
+        <button
+          type="button"
+          onClick={() => navigate('/anggota/pengunduran-diri')}
+          className="mx-4 my-2 flex w-[calc(100%-2rem)] items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-left transition hover:bg-amber-100"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+            <Landmark className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-bold text-gray-900">Pengunduran Diri</span>
+            <span className="mt-1 block text-xs text-gray-600">Ajukan pencairan simpanan dan pantau status pengajuan</span>
+          </span>
+          <ArrowUpRight className="h-5 w-5 shrink-0 text-amber-700" />
+        </button>
 
       </div>
 

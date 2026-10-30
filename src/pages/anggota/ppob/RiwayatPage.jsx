@@ -1,8 +1,7 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, Bolt, History, Receipt, Smartphone, Wallet, Wifi } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import api from '@/lib/api'
+import { usePpobHistory } from '@/hooks/usePpobData'
 
 const filters = [
   ['semua', 'Semua'],
@@ -17,10 +16,7 @@ const colors = { pulsa: 'from-emerald-500 to-teal-600', paket_data: 'from-blue-5
 export default function RiwayatPage() {
   const navigate = useNavigate()
   const [filter, setFilter] = useState('semua')
-  const { data: history = [], isLoading, isError } = useQuery({
-    queryKey: ['ppob-history'],
-    queryFn: () => api.get('/anggota/ppob/riwayat').then(response => response.data?.data || []),
-  })
+  const { data: history = [], isLoading, isError } = usePpobHistory()
   const visible = filter === 'semua' ? history : history.filter(item => item.jenis_produk === filter)
 
   return (

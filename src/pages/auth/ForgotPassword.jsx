@@ -1,33 +1,9 @@
-import React, { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { KeyRound, ArrowLeft } from 'lucide-react'
-import api from '../../api/axios'
+import { useForgotPasswordForm } from '@/hooks/useAuthForms'
 
 const ForgotPassword = () => {
-  const navigate = useNavigate()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [formData, setFormData] = useState({
-    username: '',
-    nomor_hp: ''
-  })
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    setSuccess('')
-
-    try {
-      const response = await api.post('/auth/forgot-password', formData)
-      setSuccess(`Password baru: ${response.data.data.new_password}`)
-    } catch (err) {
-      setError(err.response?.data?.message || 'Gagal reset password')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { formData, setFormData, loading, error, success, handleSubmit } = useForgotPasswordForm()
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 p-4">

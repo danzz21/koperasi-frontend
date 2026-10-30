@@ -1,61 +1,11 @@
-import React, { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { UserPlus, Eye, EyeOff, CheckCircle } from 'lucide-react'
-import api from '../../api/axios'
+import { useRegistrationForm } from '@/hooks/useAuthForms'
 
 const Register = () => {
-  const navigate = useNavigate()
   const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    password_confirmation: '',
-    nama_lengkap: '',
-    nomor_ktp: '',
-    nomor_hp: '',
-    nomor_hp_keluarga: '',
-    jenis_kelamin: 'L',
-    pekerjaan: '',
-    alamat: '',
-    no_rek: '',
-    atasnama_rekening: '',
-    jenis_bank: ''
-  })
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    setSuccess('')
-
-    try {
-      await api.post('/auth/register', formData)
-      setSuccess('Registrasi berhasil! Silakan tunggu verifikasi admin.')
-      setTimeout(() => navigate('/login'), 3000)
-    } catch (err) {
-      const responseData = err.response?.data
-      if (responseData?.errors) {
-        // Format validation errors dari backend
-        const errorMessages = Object.entries(responseData.errors)
-          .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
-          .join('\n')
-        setError(errorMessages)
-      } else {
-        setError(responseData?.message || 'Registrasi gagal')
-      }
-      console.error('Register error:', err.response?.data)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { formData, loading, error, success, handleChange, handleSubmit } = useRegistrationForm()
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 p-4">

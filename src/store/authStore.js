@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import api from '@/lib/api'
+import { getCurrentUser, login as loginRequest, logout as logoutRequest } from '@/services/authService'
 
 const useAuthStore = create((set, get) => ({
   user:    JSON.parse(localStorage.getItem('koperasi_user') || 'null'),
@@ -11,7 +11,7 @@ const useAuthStore = create((set, get) => ({
   login: async (username, password) => {
     set({ loading: true, error: null })
     try {
-      const { data } = await api.post('/auth/login', { username, password })
+      const data = await loginRequest({ username, password })
       localStorage.setItem('koperasi_token', data.token)
       localStorage.setItem('koperasi_user',  JSON.stringify(data.user))
       set({ token: data.token, user: data.user, loading: false })
@@ -25,7 +25,7 @@ const useAuthStore = create((set, get) => ({
 
   // Logout
   logout: async () => {
-    try { await api.post('/auth/logout') } catch (_) {}
+    try { await logoutRequest() } catch (_) {}
     localStorage.removeItem('koperasi_token')
     localStorage.removeItem('koperasi_user')
     set({ user: null, token: null })
@@ -56,7 +56,7 @@ const useAuthStore = create((set, get) => ({
   /** Ambil ulang data user dari server agar status onboarding selalu akurat. */
   refreshUser: async () => {
     try {
-      const { data } = await api.get('/auth/me')
+      const data = await getCurrentUser()
 
       return get().setUser(data?.user ?? null)
     } catch (_) {

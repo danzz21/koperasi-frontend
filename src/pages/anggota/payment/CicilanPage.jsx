@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, CalendarCheck, Check, CreditCard, Info, LoaderCircle } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import api from '@/lib/api'
+import { useCreateInstallmentPayment } from '@/hooks/usePaymentData'
+import { useInstallments } from '@/hooks/useMemberData'
 
 const methods = [
   { id: 'bca_va', label: 'BCA Virtual Account', group: 'Virtual Account', fee: 4000, color: 'bg-blue-600' },
@@ -20,12 +20,23 @@ export default function CicilanPaymentPage() {
   const navigate = useNavigate()
   const { jenis = 'qard', id } = useParams()
   const [method, setMethod] = useState('qris')
-  const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [amountInput, setAmountInput] = useState('')
-  const { data: rows = [], isLoading } = useQuery({
-    queryKey: ['anggota-cicilan-payment'],
-    queryFn: () => api.get('/anggota/cicilan').then(response => response.data?.data || []),
+  const { data: rows = [], isLoading } = useInstallments(['anggota-cicilan-payment'])
+  const paymentMutation = useCreateInstallmentPayment({
+    onSuccess: response => {
+      const orderId = response.data?.order_id || response.data?.data?.order_id
+      if (!orderId) {
+        setMessage('Server tidak mengembalikan order ID.')
+        return
+      }
+      navigate(`/anggota/payment/status/${orderId}`)
+    },
+    onError: error => {
+      const validation = error.response?.data?.errors
+      const details = validation ? Object.values(validation).flat().join(' ') : ''
+      setMessage(details || error.response?.data?.message || error.message || 'Pembayaran cicilan gagal.')
+    },
   })
   const item = rows.find(row => String(row.id) === String(id))
   const selected = methods.find(option => option.id === method)
@@ -50,25 +61,13 @@ export default function CicilanPaymentPage() {
       setMessage('Masukkan nominal pembayaran yang valid.')
       return
     }
-    setLoading(true)
     setMessage('')
-    try {
-      const response = await api.post('/anggota/payment/proses-cicilan', {
-        id: item.id,
-        nominal: amount,
-        payment_method: method,
-        jenis,
-      })
-      const orderId = response.data?.order_id || response.data?.data?.order_id
-      if (!orderId) throw new Error('Server tidak mengembalikan order ID.')
-      navigate(`/anggota/payment/status/${orderId}`)
-    } catch (error) {
-      const validation = error.response?.data?.errors
-      const details = validation ? Object.values(validation).flat().join(' ') : ''
-      setMessage(details || error.response?.data?.message || error.message || 'Pembayaran cicilan gagal.')
-    } finally {
-      setLoading(false)
-    }
+    paymentMutation.mutate({
+      id: item.id,
+      nominal: amount,
+      payment_method: method,
+      jenis,
+    })
   }
 
   if (isLoading) return <div className="min-h-screen bg-gray-50 p-6 text-center text-gray-500">Memuat data cicilan...</div>
@@ -113,7 +112,7 @@ export default function CicilanPaymentPage() {
 
         <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800"><Info size={16} /> Mode simulasi aktif. Tidak ada uang nyata yang diproses.</div>
         {message && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{message}</div>}
-        <button disabled={loading} className="fixed bottom-[72px] left-4 right-4 z-40 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-600 py-3 font-bold text-white shadow-lg disabled:opacity-50">{loading ? <span className="flex justify-center gap-2"><LoaderCircle size={18} className="animate-spin" /> Memproses...</span> : `Bayar ${money(total)} →`}</button>
+        <button disabled={paymentMutation.isPending} className="fixed bottom-[72px] left-4 right-4 z-40 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-600 py-3 font-bold text-white shadow-lg disabled:opacity-50">{paymentMutation.isPending ? <span className="flex justify-center gap-2"><LoaderCircle size={18} className="animate-spin" /> Memproses...</span> : `Bayar ${money(total)} →`}</button>
       </form>
     </div>
   )

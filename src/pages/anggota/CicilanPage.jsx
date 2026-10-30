@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import api from '@/lib/api'
+import { useInstallments } from '@/hooks/useMemberData'
 import { Calendar, AlertCircle, CheckCircle, Clock } from 'lucide-react'
 import MemberHeader from '@/components/anggota/MemberHeader'
 
@@ -16,10 +15,7 @@ const getStatusBadge = (status) => {
 
 export default function CicilanPage() {
   const navigate = useNavigate()
-  const { data: cicilan = [], isLoading } = useQuery({
-    queryKey: ['anggota-cicilan'],
-    queryFn: () => api.get('/anggota/cicilan').then(r => r.data?.data || []),
-  })
+  const { data: cicilan = [], isLoading } = useInstallments()
 
   const stats = {
     terbayar: cicilan.filter(c => c.status === 'terbayar').length,

@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Check, LoaderCircle, Phone, Smartphone, Wallet, Wifi, Zap } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { usePpobProduct } from '@/hooks/usePpobProduct'
 
 const catalog = {
   pulsa: {
@@ -85,37 +85,20 @@ const accentClasses = {
 export default function PpobProductPage({ type }) {
   const navigate = useNavigate()
   const config = catalog[type]
-  const [target, setTarget] = useState('')
-  const [filter, setFilter] = useState('Semua')
-  const [selected, setSelected] = useState(null)
-  const [submitting, setSubmitting] = useState(false)
+  const {
+    target,
+    setTarget,
+    filter,
+    changeFilter,
+    selected,
+    setSelected,
+    submitting,
+    products,
+    validTarget,
+    submitOrder,
+  } = usePpobProduct(type, config)
   const Icon = config.icon
   const colors = accentClasses[config.accent]
-  const products = useMemo(
-    () => config.products.filter(product => filter === 'Semua' || product[1] === filter),
-    [config.products, filter]
-  )
-  const validTarget = target.replace(/\D/g, '').length >= 10
-
-  const submitOrder = async event => {
-    event.preventDefault()
-    if (!selected || !validTarget) return
-    setSubmitting(true)
-    navigate('/anggota/ppob/konfirmasi', {
-      state: {
-        order: {
-          jenis_produk: type === 'data' ? 'paket_data' : type === 'listrik' ? 'token_listrik' : type,
-          kode_produk: selected[0],
-          nomor_tujuan: target,
-          provider: selected[1],
-          nama_produk: selected[2],
-          nominal: selected[3],
-          harga: selected[4],
-        },
-      },
-    })
-    setSubmitting(false)
-  }
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ paddingBottom: '112px' }}>
@@ -149,7 +132,7 @@ export default function PpobProductPage({ type }) {
           <div>
             <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Pilih Provider</p>
             <div className="flex gap-2 overflow-x-auto pb-1">
-              {config.filters.map(item => <button type="button" key={item} onClick={() => { setFilter(item); setSelected(null) }} className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border ${filter === item ? `${colors.active} text-white` : 'bg-white text-gray-600 border-gray-200'}`}>{item}</button>)}
+              {config.filters.map(item => <button type="button" key={item} onClick={() => changeFilter(item)} className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold border ${filter === item ? `${colors.active} text-white` : 'bg-white text-gray-600 border-gray-200'}`}>{item}</button>)}
             </div>
           </div>
         )}
